@@ -1,0 +1,29 @@
+{
+  "name": "qd_vector",
+  "version": "1.0.0",
+  "description": "Quick and dirty and minimalist vector and matrix operations in Javascript. KISS.",
+  "main": "lib/index.js",
+  "type": "module",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AaronWatters/qd_vector.git"
+  },
+  "keywords": [
+    "vector",
+    "matrix",
+    "algebra"
+  ],
+  "author": "Aaron Watters",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/AaronWatters/qd_vector/issues"
+  },
+  "homepage": "https://github.com/AaronWatters/qd_vector#readme"
+}

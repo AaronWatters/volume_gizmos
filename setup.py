@@ -17,19 +17,19 @@ setup(
     author_email="awatters@flatironinstitute.org",
     url=url,
     install_requires=[
-        "jp_doodle",
+        #"jp_doodle",
         "numpy",
         "H5Gizmos",
         ],
     scripts = [
-        # none yet.
+        "bin/volume_triptych_gizmo",
     ],
     python_requires=">=3.6",
     # Javascript modules are frozen into the distribution.
     include_package_data=True,
     package_data={
         'volume_gizmos': [
-            'node_modules/**/*',  # Include all files its subdirectories
+            'node_modules/**/*',  # Include all files and subdirectories
             'package.json',
         ],
     },

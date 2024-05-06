@@ -1,0 +1,7 @@
+#!/usr/bin/env python
+
+from volume_gizmos import Triptych
+
+if __name__ == '__main__':
+    Triptych.script()
+    
