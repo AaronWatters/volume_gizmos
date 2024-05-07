@@ -23,8 +23,8 @@ class VolumeGizmo:
         tag = f'<canvas id="{identity}" width="{width}" height="{height}"></canvas>'
         return Html(tag)
     
-    def load_array_to_js(self, array, dash):
+    def load_array_to_js(self, array, dash, name="cpu_volume"):
         web_gpu_volume = self.web_gpu_volume
         init_volume = dash.new(web_gpu_volume.CPUVolume.Volume, array.shape, array.ravel())
-        cpu_volume = dash.cache("cpu_volume", init_volume )
+        cpu_volume = dash.cache(name, init_volume )
         return cpu_volume
