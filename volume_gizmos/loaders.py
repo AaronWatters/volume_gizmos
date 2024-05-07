@@ -19,6 +19,8 @@ def load_volume(fn):
         return load_tiff(fn)
     elif fn.endswith(".klb"):
         return load_klb(fn)
+    elif fn.endswith(".nii") or fn.endswith(".nii.gz"):
+        return load_nii(fn)
     else:
         raise ValueError("Unknown file format: " + fn)
     return ar
@@ -76,6 +78,22 @@ def load_klb(fn):
         print ("Install problem fix at: https://github.com/bhoeckendorf/pyklb/issues/3")
         raise
     ar = pyklb.readfull(fn)
+    return ar
+
+def load_nii(fn):
+    """
+    Load a volume from a Nifti file.
+    """
+    try:
+        import nibabel as nib
+    except ImportError:
+        print ("The nibabel package is required for Nifti file loading.")
+        print ("It is not automatically installed with this package.")
+        print ("  pip install nibabel")
+        print ("Please install nibabel.")
+        raise
+    img = nib.load(fn)
+    ar = img.get_fdata()
     return ar
 
 def scale_to_bytes(array):
