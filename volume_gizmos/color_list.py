@@ -10,7 +10,7 @@ def get_hex_colors(length):
 
 def rgbhex(rgb):
     rgba = list(rgb) + [255]
-    s = "0x" + "".join(["%02x" % x for x in rgba])
+    s = "0x" + "".join(["%02x" % x for x in reversed(rgba)])
     return int(s, base=16)
 
 def rgbhtml(rgb):
