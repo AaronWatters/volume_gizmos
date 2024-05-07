@@ -17,6 +17,8 @@ def load_volume(fn):
         ar = load_h5(fn)
     elif fn.endswith(".tif") or fn.endswith(".tiff"):
         return load_tiff(fn)
+    elif fn.endswith(".klb"):
+        return load_klb(fn)
     else:
         raise ValueError("Unknown file format: " + fn)
     return ar
@@ -62,6 +64,19 @@ def load_h5(fn):
     #with h5py.File(fn, "r") as f:
     #    ar = f["data"][:]
     #return ar
+
+def load_klb(fn):
+    """
+    Load a volume from a KLB file.
+    """
+    try:
+        import pyklb
+    except ImportError:
+        print ("Please install pyklb or fix any install problems.")
+        print ("Install problem fix at: https://github.com/bhoeckendorf/pyklb/issues/3")
+        raise
+    ar = pyklb.readfull(fn)
+    return ar
 
 def scale_to_bytes(array):
     """

@@ -12,7 +12,7 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.intensities = loaders.scale_to_bytes(intensities)
         nlabels = self.labels.max()
         hex_colors = [0] + list(color_list.get_hex_colors(nlabels))
-        #print("hex_colors", hex_colors)
+        print("hex_colors", list(map(hex, hex_colors)))
         self.colors = np.array(hex_colors, dtype=np.uint32)
         self.size = size
         dash = self.make_dashboard()
