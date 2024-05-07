@@ -2,6 +2,7 @@
 import numpy as np
 from H5Gizmos import Html, serve, get, do, Stack, Slider, Text
 from . import VolumeSuper, loaders, color_list
+import os
 
 class SegmentationQuad(VolumeSuper.VolumeGizmo):
 
@@ -11,7 +12,7 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.intensities = loaders.scale_to_bytes(intensities)
         nlabels = self.labels.max()
         hex_colors = [0] + list(color_list.get_hex_colors(nlabels))
-        print("hex_colors", hex_colors)
+        #print("hex_colors", hex_colors)
         self.colors = np.array(hex_colors, dtype=np.uint32)
         self.size = size
         dash = self.make_dashboard()
@@ -42,6 +43,10 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
     
     async def link(self):
         await self.dash.link()
+        self.connect_dashboard(self.dash, self.load_volumes)
+
+    async def show(self):
+        await self.dash.show()
         self.connect_dashboard(self.dash, self.load_volumes)
 
     def load_volumes(self):
@@ -76,13 +81,22 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         depth = self.depth_slider.value
         do(self.quad.change_depth(depth))
 
-    def load_volume(self):
-        "do nothing for now."
-
     def range_callback(self, min_value, max_value):
         self.depth_slider.set_range(minimum=min_value, maximum=max_value)
 
-    
+async def quad(labels_path, intensities_path, size=512, show=True):
+    "Load a segmentation quad from files."
+    def get_array(path):
+        expanded_path = os.path.expanduser(path)
+        #print("loading volume", expanded_path)
+        return loaders.load_volume(expanded_path)
+    labels = get_array(labels_path)
+    intensities = get_array(intensities_path)
+    quad = SegmentationQuad(labels=labels, intensities=intensities, size=size)
+    if show:
+        await quad.show()
+    return quad
+
 def script(debug=True):
     import argparse
     import os

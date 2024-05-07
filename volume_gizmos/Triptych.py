@@ -1,6 +1,7 @@
 
 from H5Gizmos import Html, serve, get, do, Stack, Slider, Text
 from . import VolumeSuper, loaders
+import os
 
 class Triptych(VolumeSuper.VolumeGizmo):
 
@@ -17,6 +18,10 @@ class Triptych(VolumeSuper.VolumeGizmo):
 
     async def link(self):
         await self.dash.link()
+        self.connect_dashboard(self.dash, self.load_volume)
+
+    async def show(self):
+        await self.dash.show()
         self.connect_dashboard(self.dash, self.load_volume)
 
     def load_volume(self):
@@ -73,6 +78,17 @@ class Triptych(VolumeSuper.VolumeGizmo):
         depth = self.depth_slider.value
         do(self.triptych.change_depth(depth))
         self.depth_text.text("Depth: " + str(depth))
+
+async def panels(volume_path, dK=1.0, dJ=1.0, dI=1.0, size=512, show=True):
+    expanded_volume = os.path.expanduser(volume_path)
+    print("Loading volume", repr(volume_path))
+    array = loaders.load_volume(expanded_volume)
+    print("loaded", array.shape, array.dtype)
+    name = os.path.split(expanded_volume)[-1]
+    triptych = Triptych(array, dK, dJ, dI, size, name=name)
+    if show:
+        await triptych.show()
+    return triptych
     
 def script(debug=True):
     import argparse

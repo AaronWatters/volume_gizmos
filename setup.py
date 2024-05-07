@@ -23,7 +23,7 @@ setup(
         ],
     scripts = [
         "bin/volume_triptych_gizmo",
-        "bin/volume_segmentation_quad_gizmo",
+        "bin/segmentation_quad_gizmo",
     ],
     python_requires=">=3.6",
     # Javascript modules are frozen into the distribution.

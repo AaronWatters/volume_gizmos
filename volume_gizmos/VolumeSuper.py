@@ -9,7 +9,7 @@ class VolumeGizmo:
         # This must be called before the gizmo is "started" (before Html page load).
         import pkg_resources
         modules_path = pkg_resources.resource_filename('volume_gizmos', 'node_modules')
-        print("Loading node modules from", modules_path)
+        #print("Loading node modules from", modules_path)
         dash.load_node_modules(modules_path, "nm")
         dash.load_module("webgpu_volume")
 
