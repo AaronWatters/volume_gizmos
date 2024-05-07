@@ -79,7 +79,7 @@ def script(debug=True):
     import os
 
     # Create an ArgumentParser object
-    parser = argparse.ArgumentParser(description='Process a file path and three float arguments.')
+    parser = argparse.ArgumentParser(description='Display iso-surface, slice, and max-values for a 3d volume array.')
 
     # Add the file path argument
     parser.add_argument('--volume', type=str, help='File path to the volume', required=True)
@@ -93,7 +93,6 @@ def script(debug=True):
     # Parse the arguments from the command line
     args = parser.parse_args()
 
-    # Access the arguments and do something with them
     expanded_volume = os.path.expanduser(args.volume)
     if debug:
         print("File path:", expanded_volume)
