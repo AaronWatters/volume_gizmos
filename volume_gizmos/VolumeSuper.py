@@ -1,5 +1,6 @@
 
 
+import importlib.resources
 from H5Gizmos import do, Html
 
 class VolumeGizmo:
@@ -7,9 +8,12 @@ class VolumeGizmo:
 
     def configure_dashboard(self, dash):
         # This must be called before the gizmo is "started" (before Html page load).
-        import pkg_resources
-        modules_path = pkg_resources.resource_filename('volume_gizmos', 'node_modules')
+        #import pkg_resources -- deprecated
+        #modules_path = pkg_resources.resource_filename('volume_gizmos', 'node_modules')
         #print("Loading node modules from", modules_path)
+        import importlib
+        fs = importlib.resources.files('volume_gizmos')
+        modules_path = str(fs / 'node_modules')  # xxx this should be standardized.
         dash.load_node_modules(modules_path, "nm")
         dash.load_module("webgpu_volume")
 
