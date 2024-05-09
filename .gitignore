@@ -10,7 +10,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+#dist/  -- include dist in node_modules
 downloads/
 eggs/
 .eggs/
