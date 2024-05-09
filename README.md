@@ -1,6 +1,8 @@
 # volume_gizmos
 Browser based interactive 3d data array visualizations
 
+<img src="quad.png" width="500"/>
+
 This project is currently an Alpha in development.
 
 # Development (or experimental) install
