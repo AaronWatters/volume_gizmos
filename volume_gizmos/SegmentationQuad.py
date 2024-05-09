@@ -6,7 +6,7 @@ import os
 
 class SegmentationQuad(VolumeSuper.VolumeGizmo):
 
-    def __init__(self, labels, intensities, size=512):
+    def __init__(self, labels, intensities, size=512, dI=1, dJ=1, dK=1):
         assert labels.max() < 256 and labels.min() >= 0, "Labels must be 8-bit."
         self.labels = labels.astype(np.ubyte)
         self.intensities = loaders.scale_to_bytes(intensities)
@@ -17,6 +17,9 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.size = size
         dash = self.make_dashboard()
         self.configure_dashboard(dash)
+        self.dI = dI
+        self.dJ = dJ
+        self.dK = dK
 
     def make_dashboard(self):
         size = self.size
@@ -56,7 +59,7 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         cpu_seg = self.load_array_to_js(self.labels, dash, name="cpu_seg")
         cpu_int = self.load_array_to_js(self.intensities, dash, name="cpu_int")
         #cpu_colors = self.load_array_to_js(self.colors, dash, name="cpu_colors")
-        [dK, dJ, dI] = [1, 1, 1] # for now
+        [dK, dJ, dI] = [self.dK, self.dJ, self.dI]
         gpu_seg = dash.cache("gpu_seg", cpu_seg.gpu_volume(context, dK, dJ, dI))
         gpu_int = dash.cache("gpu_int", cpu_int.gpu_volume(context, dK, dJ, dI))
         #gpu_colors = dash.cache("gpu_colors", cpu_colors.gpu_volume(context, dK, dJ, dI))
