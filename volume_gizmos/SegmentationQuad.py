@@ -6,8 +6,9 @@ import os
 
 class SegmentationQuad(VolumeSuper.VolumeGizmo):
 
-    def __init__(self, labels, intensities, size=512, dI=1, dJ=1, dK=1):
+    def __init__(self, labels, intensities, size=512, dI=1, dJ=1, dK=1, rotate=True):
         assert labels.max() < 256 and labels.min() >= 0, "Labels must be 8-bit."
+        self.orbiting = rotate
         self.labels = labels.astype(np.ubyte)
         self.intensities = loaders.scale_to_bytes(intensities)
         nlabels = self.labels.max()
@@ -71,7 +72,8 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
             self.range_callback
         )
         self.quad = dash.cache("quad", view_init)
-        orbiting = True
+        orbiting = self.orbiting
+        #print("orbiting", orbiting)
         do(self.quad.paint_on_canvases(
             self.seg_slice_canvas.element[0],  
             self.max_int_canvas.element[0],
@@ -97,7 +99,7 @@ async def quad(labels_path, intensities_path, size=512, show=True):
     intensities = get_array(intensities_path)
     quad = SegmentationQuad(labels=labels, intensities=intensities, size=size)
     if show:
-        await quad.show()
+        await quad.link()
     return quad
 
 def script(debug=True):
@@ -108,6 +110,10 @@ def script(debug=True):
     parser.add_argument('--seg', type=str, help='File path to the segmentation', required=True)
     parser.add_argument('--int', type=str, help='File path to the intensities', required=True)
     parser.add_argument('--size', type=int, help='canvas size', default=512)
+    parser.add_argument('--dI', type=float, help='dI', default=1)
+    parser.add_argument('--dJ', type=float, help='dJ', default=1)
+    parser.add_argument('--dK', type=float, help='dK', default=1)
+    parser.add_argument('--no-rotate', dest='rotate', action='store_false', help='stop rotation')
 
     args = parser.parse_args()
     expanded_int = os.path.expanduser(args.int)
@@ -121,5 +127,13 @@ def script(debug=True):
     print("loading segmentation volume")
     ar_seg = loaders.load_volume(expanded_seg)
     print("loaded volumes", ar_int.shape, ar_seg.shape, ar_int.dtype, ar_seg.dtype)
-    quad = SegmentationQuad(labels=ar_seg, intensities=ar_int, size=args.size)
+    #print("rotating", args.rotate)
+    quad = SegmentationQuad(
+        labels=ar_seg, 
+        intensities=ar_int, 
+        size=args.size,
+        dI=args.dI,
+        dJ=args.dJ,
+        dK=args.dK,
+        rotate=args.rotate)
     serve(quad.link())
