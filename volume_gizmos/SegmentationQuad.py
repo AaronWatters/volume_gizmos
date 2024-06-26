@@ -89,7 +89,15 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
     def range_callback(self, min_value, max_value):
         self.depth_slider.set_range(minimum=min_value, maximum=max_value)
 
-async def quad(labels_path, intensities_path, size=512, show=True):
+async def quad(
+        labels_path, 
+        intensities_path, 
+        size=512, 
+        show=True,
+        dI=1,
+        dJ=1,
+        dK=1,
+        rotate=True):
     "Load a segmentation quad from files."
     def get_array(path):
         expanded_path = os.path.expanduser(path)
@@ -97,7 +105,14 @@ async def quad(labels_path, intensities_path, size=512, show=True):
         return loaders.load_volume(expanded_path)
     labels = get_array(labels_path)
     intensities = get_array(intensities_path)
-    quad = SegmentationQuad(labels=labels, intensities=intensities, size=size)
+    quad = SegmentationQuad(
+        labels=labels, 
+        intensities=intensities, 
+        size=size,
+        dI=dI,
+        dJ=dJ,
+        dK=dK,
+        rotate=rotate)
     if show:
         await quad.link()
     return quad
