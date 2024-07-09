@@ -32,14 +32,16 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.seg_shade_text = Text("Segmentation Shaded")
         self.int_slice_text = Text("Intensity Slice")
         self.max_int_text = Text("Max Intensity")
-        self.depth_slider = Slider(minimum=0, maximum=255, step=1, value=128, on_change=self.depth_slide)
+        self.depth_text = Text("Depth")
+        step = 1
+        self.depth_slider = Slider(minimum=0, maximum=255, step=step, value=128, on_change=self.depth_slide)
         self.dash = Stack([
             [
                 [self.seg_slice_canvas, self.seg_slice_text],
                 [self.seg_shade_canvas, self.seg_shade_text],
             ],
             [
-                [self.int_slice_canvas, self.int_slice_text, self.depth_slider],
+                [self.int_slice_canvas, self.int_slice_text, self.depth_slider, self.depth_text],
                 [self.max_int_canvas, self.max_int_text],
             ],
         ])
@@ -83,11 +85,21 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         ))
 
     def depth_slide(self, *ignored):
-        depth = self.depth_slider.value
+        value = self.depth_slider.value
+        # reverse orientation
+        depth = self.depth_max - value
         do(self.quad.change_depth(depth))
+        self.depth_text.text(f"Depth: {depth}")
 
     def range_callback(self, min_value, max_value):
-        self.depth_slider.set_range(minimum=min_value, maximum=max_value)
+        step = 1
+        self.depth_min = min_value
+        self.depth_max = max_value
+        max_slide = max_value - min_value
+        if max_slide <= 0:
+            max_slide = 1
+        self.depth_slider.set_range(minimum=0, maximum=max_slide, step=step)
+        #self.depth_slider.set_range(minimum=max_value, maximum=min_value)
 
 async def quad(
         labels_path, 
