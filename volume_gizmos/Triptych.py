@@ -52,7 +52,7 @@ class Triptych(VolumeSuper.VolumeGizmo):
         mx = self.array.max()
         md = (mn + mx) / 2
         step = 1
-        if mx - mn > 0.01:
+        if mx - mn > 1e-6:
             step = (mx - mn) / 255
         else:
             mx = mn + 1
