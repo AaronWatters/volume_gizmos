@@ -1,11 +1,11 @@
 
-from H5Gizmos import Html, serve, get, do, Stack, Slider, Text
+from H5Gizmos import Html, serve, get, do, Stack, Slider, Text, ClickableText
 from . import VolumeSuper, loaders
 import os
 
 class Triptych(VolumeSuper.VolumeGizmo):
 
-    def __init__(self, array, dK, dJ, dI, size=512, orbiting=True, name="Triptych"):
+    def __init__(self, array, dK=1, dJ=1, dI=1, size=512, orbiting=True, name="Triptych"):
         self.array = array
         self.dK = dK
         self.dJ = dJ
@@ -48,16 +48,27 @@ class Triptych(VolumeSuper.VolumeGizmo):
         self.iso_canvas = self.canvas_component("iso-canvas", size, size)
         #self.iso_canvas = Html('<canvas id="iso-canvas" width="512" height="512"></canvas>')
         self.level_text = Text("Level")
-        self.level_slider = Slider(minimum=0, maximum=255, step=1, value=128, on_change=self.threshold_slide)
+        mn = self.array.min()
+        mx = self.array.max()
+        md = (mn + mx) / 2
+        step = 1
+        if mx - mn > 0.01:
+            step = (mx - mn) / 255
+        else:
+            mx = mn + 1
+        self.level_slider = Slider(minimum=mn, maximum=mx, step=step, value=md, on_change=self.threshold_slide)
         self.max_canvas = self.canvas_component("max-canvas", size, size)
         self.status_text = Text("Status")
         self.depth_text = Text("Depth")
         self.depth_slider = Slider(minimum=0, maximum=255, step=1, value=128, on_change=self.depth_slide)
         self.slice_canvas = self.canvas_component("slice-canvas", size, size)
+        self.colorize = ClickableText("Colorize", on_click=self.colorize_click)
+        self.colorize.css(color="blue")
+        self.colorized = False
         self.dash = Stack([
             [
                 [self.iso_canvas, self.level_text, self.level_slider],
-                [self.max_canvas, self.status_text], 
+                [self.max_canvas, self.colorize, self.status_text], 
                 [self.slice_canvas, self.depth_text, self.depth_slider],
             ],
         ])
@@ -65,6 +76,14 @@ class Triptych(VolumeSuper.VolumeGizmo):
     
     def set_status(self, text):
         self.status_text.text(text)
+
+    def colorize_click(self, *ignored):
+        self.colorized = not self.colorized
+        do(self.triptych.set_colorize(self.colorized))
+        if self.colorized:
+            self.colorize.text("Uncolorize")
+        else:
+            self.colorize.text("Colorize")
 
     def range_callback(self, min_value, max_value):
         self.depth_slider.set_range(minimum=min_value, maximum=max_value)
@@ -120,6 +139,7 @@ def script(debug=True):
     print("Loading volume", repr(args.volume))
     array = loaders.load_volume(expanded_volume)
     print("loaded", array.shape, array.dtype)
+    arrayf32 = array.astype('float32')
     name = os.path.split(expanded_volume)[-1]
-    triptych = Triptych(array, args.dK, args.dJ, args.dI, args.size, name=name)
+    triptych = Triptych(arrayf32, args.dK, args.dJ, args.dI, args.size, name=name)
     serve(triptych.link())
