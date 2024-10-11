@@ -9,7 +9,7 @@ class VolumeGizmo:
     def configure_dashboard(self, dash):
         # This must be called before the gizmo is "started" (before Html page load).
         import sys
-        if sys.version < "3.9":
+        if (sys.version_info[0], sys.version_info[1]) < (3, 8):
             import pkg_resources# -- deprecated
             modules_path = pkg_resources.resource_filename('volume_gizmos', 'node_modules')
         else:
