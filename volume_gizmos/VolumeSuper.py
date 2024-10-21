@@ -7,6 +7,7 @@ class VolumeGizmo:
     """Base class for volume gizmos"""
 
     def configure_dashboard(self, dash):
+        "load js resources"
         # This must be called before the gizmo is "started" (before Html page load).
         import sys
         if (sys.version_info[0], sys.version_info[1]) < (3, 8):
