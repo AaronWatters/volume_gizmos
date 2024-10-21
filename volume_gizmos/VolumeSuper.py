@@ -30,6 +30,9 @@ class VolumeGizmo:
         return Html(tag)
     
     def load_array_to_js(self, array, dash, name="cpu_volume"):
+        # xxxx should optimize using POST method?
+        # component.store_array in 
+        # https://github.com/AaronWatters/H5Gizmos/blob/main/doc/Javascript/README.md
         web_gpu_volume = self.web_gpu_volume
         init_volume = dash.new(web_gpu_volume.CPUVolume.Volume, array.shape, array.ravel())
         cpu_volume = dash.cache(name, init_volume )
