@@ -23,10 +23,10 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.dJ = dJ
         self.dK = dK
 
-    def change_volumes(self, labels, intensities):
+    async def change_volumes(self, labels, intensities):
         self.labels = labels.astype(np.ubyte)
         self.intensities = loaders.scale_to_bytes(intensities)
-        self.load_volumes(reload=True)
+        await self.load_volumes(reload=True)
 
     def make_dashboard(self):
         size = self.size
@@ -53,23 +53,23 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         ])
         return self.dash
     
-    def connect_volumes(self):
-        return self.connect_dashboard(self.dash, self.load_volumes)
+    async def connect_volumes(self):
+        return await self.async_connect_dashboard(self.dash, self.load_volumes)
     
     async def link(self):
         await self.dash.link()
-        self.connect_volumes()
+        await self.connect_volumes()
 
     async def show(self):
         await self.dash.show()
-        self.connect_volumes()
+        await self.connect_volumes()
 
-    def load_volumes(self, reload=False):
+    async def load_volumes(self, reload=False):
         web_gpu_volume = self.web_gpu_volume
         context = self.context
         dash = self.dash
-        cpu_seg = self.load_array_to_js(self.labels, dash, name="cpu_seg")
-        cpu_int = self.load_array_to_js(self.intensities, dash, name="cpu_int")
+        cpu_seg = await self.async_load_array_to_js(self.labels, dash, name="cpu_seg")
+        cpu_int = await self.async_load_array_to_js(self.intensities, dash, name="cpu_int")
         #cpu_colors = self.load_array_to_js(self.colors, dash, name="cpu_colors")
         #gpu_colors = dash.cache("gpu_colors", cpu_colors.gpu_volume(context, dK, dJ, dI))
         if not reload:
@@ -95,6 +95,7 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
             ))
         else:
             do(self.quad.change_volumes(cpu_seg, cpu_int))
+        self.depth_text.text("loaded async.")
 
     def depth_slide(self, *ignored):
         value = self.depth_slider.value

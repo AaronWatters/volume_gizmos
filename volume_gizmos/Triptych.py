@@ -18,18 +18,19 @@ class Triptych(VolumeSuper.VolumeGizmo):
 
     async def link(self):
         await self.dash.link()
-        self.connect_dashboard(self.dash, self.load_volume)
+        await self.async_connect_dashboard(self.dash, self.load_volume_async)
 
     async def show(self):
         await self.dash.show()
-        self.connect_dashboard(self.dash, self.load_volume)
+        await self.async_connect_dashboard(self.dash, self.load_volume_async)
 
-    def load_volume(self):
+    async def load_volume_async(self):
         self.set_status("Loading volume...")
         web_gpu_volume = self.web_gpu_volume
         context = self.context
         dash = self.dash
-        cpu_volume = self.load_array_to_js(self.array, dash)
+        #cpu_volume = self.load_array_to_js(self.array, dash)
+        cpu_volume = await self.async_load_array_to_js(self.array, dash)
         [dK, dJ, dI] = [self.dK, self.dJ, self.dI]
         gpu_volume = dash.cache("gpu_volume", cpu_volume.gpu_volume(context, dK, dJ, dI))
         view_init = dash.new(web_gpu_volume.Triptych.Triptych, gpu_volume, self.range_callback)
@@ -41,7 +42,7 @@ class Triptych(VolumeSuper.VolumeGizmo):
             self.slice_canvas.element[0], 
             orbiting)
         )
-        self.set_status(repr(self.name) + " loaded.")
+        self.set_status(repr(self.name) + " loaded async.")
 
     def make_dashboard(self):
         size = self.size
