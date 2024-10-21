@@ -4,7 +4,7 @@ from H5Gizmos import Html, serve, get, do, Stack, Slider, Text
 from . import VolumeSuper, loaders, color_list
 import os
 
-class SegmentationQuad(VolumeSuper.VolumeGizmo):f
+class SegmentationQuad(VolumeSuper.VolumeGizmo):
 
     def __init__(self, labels, intensities, size=512, dI=1, dJ=1, dK=1, rotate=True, nlabels=None):
         assert labels.max() < 256 and labels.min() >= 0, "Labels must be 8-bit."
