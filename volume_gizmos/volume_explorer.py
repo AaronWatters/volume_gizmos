@@ -1,6 +1,7 @@
 
 import H5Gizmos as h5
 import numpy as np
+import asyncio
 
 class Indexer:
 
@@ -14,7 +15,7 @@ class Indexer:
         self.screen_width = screen_width
         self.voxel_width = voxel_width
         self.delta = int(voxel_width / 2)
-        self.stride =max(1, int(size / screen_width))
+        self.stride = max(1, int(size / screen_width))
         self.dash = self.dashboard(label=label)
 
     def change_index(self, index=None, callback=True):
@@ -85,11 +86,11 @@ class Slicer:
         self.dim = dim
         self.indices = self.location2d()
         self.dash = self.dashboard()
-    def update_if_needed(self):
+    async def update_if_needed(self):
         indices = self.location2d()
         if indices != self.indices:
             self.indices = indices
-            self.update()
+            await self.update()
     def dashboard(self):
         width = self.explorer.screen_width
         overview = self.overview_slice()
@@ -111,8 +112,11 @@ class Slicer:
             ],
         ])
         return dash
-    def update(self):
+    async def update(self):
+        self.location_text.text("updating")
+        await asyncio.sleep(0)
         self.overview_image.change_array(self.overview_slice())
+        await asyncio.sleep(0)
         self.detail_image.change_array(self.detail_slice())
         self.location_text.text(self.location_info())
     def location_info(self):
@@ -224,10 +228,16 @@ class Explorer:
         return dash
     
     def update(self, *ignored):
-        for slicer in self.slicers:
-            slicer.update_if_needed()
-        for indexer in self.indexers:
-            indexer.change_index(callback=False)
+        h5.schedule_task(self.update_async(*ignored))
+    
+    async def update_async(self, *ignored):
+        from H5Gizmos.python.gz_jQuery import WarningContextManager
+        async with WarningContextManager(self.dash):
+            for slicer in self.slicers:
+                await slicer.update_if_needed()
+            for indexer in self.indexers:
+                indexer.change_index(callback=False)
+            #await asyncio.sleep(10) # for testing
 
     def locate(self, *ignored):
         location = []
