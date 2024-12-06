@@ -79,15 +79,18 @@ class Indexer:
 class Slicer:
 
     outline = True
+    shift = True
 
     def __init__(self, label, explorer, dim):
         self.label = label
         self.explorer = explorer
         self.dim = dim
-        self.indices = self.location2d()
+        #self.indices = self.location2d()
+        self.indices = self.explorer.locate()
         self.dash = self.dashboard()
     async def update_if_needed(self):
-        indices = self.location2d()
+        #indices = self.location2d()
+        indices = self.explorer.locate()
         if indices != self.indices:
             self.indices = indices
             await self.update()
@@ -96,8 +99,10 @@ class Slicer:
         overview = self.overview_slice()
         detail = self.detail_slice()
         self.overview_image = h5.Image(array=overview, height=width, width=width)
+        self.overview_image.css({"image-rendering": "pixelated"})
         self.overview_image.on_pixel(self.overview_click)
         self.detail_image = h5.Image(array=detail, height=width, width=width)
+        self.detail_image.css({"image-rendering": "pixelated"})
         self.detail_image.on_pixel(self.detail_click)
         label_text = h5.Text(self.label)
         self.location_text = h5.Text(self.location_info())
@@ -194,6 +199,26 @@ class Slicer:
             else:
                 slices.append(indexer.index)
         sliced = self.explorer.volume[tuple(slices)]
+        #print("slices", slices)
+        if self.shift:
+            indexer = self.explorer.indexers[self.dim]
+            shifts = []
+            if indexer.index > 0:
+                slices[self.dim] = indexer.index - 1
+                #print("before slices", slices)
+                shifted = self.explorer.volume[tuple(slices)]
+                shifts.append(shifted)
+            else:
+                shifts.append(sliced)
+            shifts.append(sliced)
+            if indexer.index < indexer.size - 1:
+                slices[self.dim] = indexer.index + 1
+                #print("after slices", slices)
+                shifted = self.explorer.volume[tuple(slices)]
+                shifts.append(shifted)
+            else:
+                shifts.append(sliced)
+            sliced = np.stack(shifts, axis=-1)
         return sliced
 
 class Explorer:
@@ -204,10 +229,12 @@ class Explorer:
         self.volume = volume
         self.screen_width = screen_width
         self.voxel_width = voxel_width
-        (I, J, K) = volume.shape
-        self.I_indexer = Indexer("I", 0, I, screen_width, voxel_width, self.update)
-        self.J_indexer = Indexer("J", 1, J, screen_width, voxel_width, self.update)
-        self.K_indexer = Indexer("K", 2, K, screen_width, voxel_width, self.update)
+        sh = (I, J, K) = volume.shape
+        M = max(I, J, K)
+        widths = (np.array(sh) * (voxel_width/M)).astype(int)
+        self.I_indexer = Indexer("I", 0, I, screen_width, widths[0], self.update)
+        self.J_indexer = Indexer("J", 1, J, screen_width, widths[1], self.update)
+        self.K_indexer = Indexer("K", 2, K, screen_width, widths[2], self.update)
         self.indexers = [self.I_indexer, self.J_indexer, self.K_indexer]
         self.I_slicer = Slicer("JK", self, 0)
         self.J_slicer = Slicer("IK", self, 1)
@@ -232,7 +259,7 @@ class Explorer:
     
     async def update_async(self, *ignored):
         from H5Gizmos.python.gz_jQuery import WarningContextManager
-        async with WarningContextManager(self.dash):
+        async with WarningContextManager(self.dash, delay_ms=1000):
             for slicer in self.slicers:
                 await slicer.update_if_needed()
             for indexer in self.indexers:
