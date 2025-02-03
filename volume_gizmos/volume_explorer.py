@@ -245,7 +245,6 @@ class Explorer:
     def dashboard(self):
         dash = h5.Stack([
             self.I_indexer.dash,
-            self.K_indexer.dash,
             self.I_slicer.dash,
             self.J_indexer.dash,
             self.J_slicer.dash,
