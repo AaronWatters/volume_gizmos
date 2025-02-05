@@ -49,8 +49,8 @@ class Triptych(VolumeSuper.VolumeGizmo):
         self.iso_canvas = self.canvas_component("iso-canvas", size, size)
         #self.iso_canvas = Html('<canvas id="iso-canvas" width="512" height="512"></canvas>')
         self.level_text = Text("Level")
-        mn = self.array.min()
-        mx = self.array.max()
+        mn = float(self.array.min())
+        mx = float(self.array.max())
         md = (mn + mx) / 2
         step = 1
         if mx - mn > 1e-6:
