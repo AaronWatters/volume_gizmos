@@ -163,8 +163,10 @@ class WormSphere:
         # make space from volume embedded in a box
         embedded_shape = np.array(volume.shape) + 2 * boundary
         self.space = np.zeros(embedded_shape, dtype=volume.dtype)
+        self.clean_space = np.zeros(embedded_shape, dtype=volume.dtype)
         self.space[:] = boundary_value
         self.space[boundary:-boundary, boundary:-boundary, boundary:-boundary] = volume
+        self.clean_space[boundary:-boundary, boundary:-boundary, boundary:-boundary] = volume
         #self.space[boundary:-boundary, boundary:-boundary, boundary:-boundary] = 0 # debug only
         self.trace = np.zeros(self.space.shape, dtype=np.uint8)
 
@@ -210,7 +212,7 @@ class WormSphere:
             self.worm_locations.append(location)
             self.small_setter.set(self.space, location)
 
-    def move_worms(self, count=1, value=255, verbose=False):
+    def move_worms(self, count=1, value=255, trace_count=False, verbose=False):
         # randomize the search order
         search_offsets = self.search_offsets
         choices = self.choices
@@ -247,7 +249,12 @@ class WormSphere:
             for j in range(n_steps+1):
                 intermediate = location + j * diff // n_steps
                 self.small_setter.set(self.space, intermediate, value)
-                self.small_setter.set(self.trace, intermediate, count)
+                if trace_count:
+                    # trace using iteration count
+                    self.small_setter.set(self.trace, intermediate, count)
+                else:
+                    # trace using worm number
+                    self.small_setter.set(self.trace, intermediate, i+1)
             self.worm_locations[i] = best_move
             choices[best_offset] = choices.get(best_offset, 0) + 1
             if verbose:
@@ -271,4 +278,55 @@ class WormSphere:
         from volume_gizmos import Triptych
         T = Triptych.Triptych(self.trace, 1.0, 1.0, 1.0, 512, name="Worm Trails")
         await T.link()
+
+    async def show_combo(self, ratio=0.5, low=None, high=None, size=512):
+        from volume_gizmos import shaded_volume, color_list
+        space = self.clean_space
+        # scale non-zero space values into range 128:255
+        space = np.array(space, dtype=np.float32)
+        rspace = space.ravel()
+        if low is not None:
+            rspace[rspace < low] = 0
+        if high is not None:
+            rspace[rspace > high] = np.max(rspace)
+        nz = rspace.nonzero()[0]
+        rmin = np.min(rspace[nz])
+        rmax = np.max(rspace[nz])
+        rspace[nz] = 128 + 127 * (rspace[nz] - rmin) / (rmax - rmin)
+        scaled = np.array(space, dtype=np.uint8)
+        # cut out a sphere from scaled
+        cut_sphere = ~ball(scaled.shape[0] // 2 + 2)
+        (I, J, K) = scaled.shape
+        #scaled[cut_sphere[:I,:J,:K]] = 0
+        # combo array left half from trace, right half from space
+        combo = np.zeros(space.shape, dtype=np.uint8)
+        H = space.shape[2] // 2
+        #combo[:, :, :H] = self.trace[:, :, :H]
+        combo[:, :, H:] = scaled[:, :, H:]
+        rcombo = combo.ravel()
+        rtrace = self.trace.ravel()
+        nztrace = rtrace.nonzero()[0]
+        rcombo[nztrace] = rtrace[nztrace]
+        # zero the sphere
+        combo[cut_sphere[:I,:J,:K]] = 0
+        # paste in half of trace
+        combo[:, :, :H] = self.trace[:, :, :H]
+        # zero out the outer shell
+        combo[0, :, :] = 0
+        combo[-1, :, :] = 0
+        combo[:, 0, :] = 0
+        combo[:, -1, :] = 0
+        combo[:, :, 0] = 0
+        combo[:, :, -1] = 0
+        # make a color list
+        hex_colors = [0] + color_list.get_hex_colors(127)
+        # add gray colors for space values
+        for gray in range(0, 128):
+            g2 = 2*gray
+            hex_colors.append(color_list.rgbhex([g2,g2,g2]))
+        self.colors = hex_colors
+        # show the combo
+        SV = shaded_volume.ShadedVolume(combo, hex_colors, ratio=ratio, size=size)
+        await SV.link()
+
     
