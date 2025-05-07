@@ -97,7 +97,7 @@ To load the latest Javascript, use the following command:
 ```bash
 rm -rf package-lock.json node_modules volume_gizmos/node_modules
 npm install
-cp -r node_modules volume_gizmos/
+#cp -r node_modules volume_gizmos/ -- automatic
 ```
 
 Then commit the updates to the git repository.
