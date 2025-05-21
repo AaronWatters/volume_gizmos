@@ -25,7 +25,7 @@ class Triptych(VolumeSuper.VolumeGizmo):
         await self.async_connect_dashboard(self.dash, self.load_volume_async)
 
     async def load_volume_async(self):
-        self.set_status("Loading volume...")
+        self.set_status("Loading volume... " + repr(self.array.shape))
         web_gpu_volume = self.web_gpu_volume
         context = self.context
         dash = self.dash
@@ -142,5 +142,6 @@ def script(debug=True):
     print("loaded", array.shape, array.dtype)
     arrayf32 = array.astype('float32')
     name = os.path.split(expanded_volume)[-1]
+    #arrayf32 = arrayf32[::5, ::5, ::5]
     triptych = Triptych(arrayf32, args.dK, args.dJ, args.dI, args.size, name=name)
     serve(triptych.link())

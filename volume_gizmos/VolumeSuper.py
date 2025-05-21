@@ -49,7 +49,9 @@ class VolumeGizmo:
     
     async def async_load_array_to_js(self, array, dash, name="cpu_volume"):
         buffer_name = name + "_buffer"
-        buffer_reference = dash.cache(buffer_name, array.ravel())
+        #buffer_reference = dash.cache(buffer_name, array.ravel())
+        buffer_reference = await dash.store_array(array, buffer_name)
+        do(dash.window.console.log("transferred array", buffer_reference))
         web_gpu_volume = self.web_gpu_volume
         #init_volume = dash.new(web_gpu_volume.CPUVolume.Volume, array.shape, array.ravel())
         init_volume = dash.new(web_gpu_volume.CPUVolume.Volume, array.shape, buffer_reference)
