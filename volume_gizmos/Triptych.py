@@ -13,16 +13,20 @@ class Triptych(VolumeSuper.VolumeGizmo):
         self.size = size
         self.name = name
         self.orbiting = orbiting
+        self.triptych = None # set in load_volume_async
         dash = self.make_dashboard()
         self.configure_dashboard(dash)
 
+    async def do_connection(self):
+        await self.async_connect_dashboard(self.dash, self.load_volume_async)
+
     async def link(self):
         await self.dash.link()
-        await self.async_connect_dashboard(self.dash, self.load_volume_async)
+        await self.do_connection()
 
     async def show(self):
         await self.dash.show()
-        await self.async_connect_dashboard(self.dash, self.load_volume_async)
+        await self.do_connection()
 
     async def load_volume_async(self):
         self.set_status("Loading volume... " + repr(self.array.shape))
@@ -43,6 +47,20 @@ class Triptych(VolumeSuper.VolumeGizmo):
             orbiting)
         )
         self.set_status(repr(self.name) + " loaded async.")
+
+    async def reload_volume_async(self, array):
+        # array must have same shape and dtype as original
+        assert array.shape == self.array.shape, "new array shape must match original" + repr(array.shape) + " != " + repr(self.array.shape)
+        assert array.dtype == self.array.dtype, "new array dtype must match original" + repr(array.dtype) + " != " + repr(self.array.dtype)
+        self.array = array
+        mn = float(self.array.min())
+        mx = float(self.array.max())
+        #print("Reloading volume... " + repr(self.array.shape) + repr([mn, mx]))
+        #self.set_status("Reloading volume... " + repr(self.array.shape) + repr([mn, mx]))
+        dash = self.dash
+        cpu_volume = await self.async_load_array_to_js(self.array, dash, name="cpu_volume")
+        do(self.triptych.change_volume(cpu_volume.data))
+        self.level_slider.set_range(minimum=mn, maximum=mx)
 
     def make_dashboard(self):
         size = self.size
