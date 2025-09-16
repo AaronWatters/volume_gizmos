@@ -102,6 +102,10 @@ def scale_to_bytes(array):
     """
     mn = array.min()
     mx = array.max()
-    array1 = (array.astype(float) - mn) / (mx - mn)
-    array8 = (array1 * 255).astype(np.uint8)
+    array1 = (array.astype(float) - mn) 
+    if mx != mn:
+        array1 = array1 / (mx - mn)
+    array8 = (array1 * 255)
+    array8 = np.clip(array8, 0, 255)  # Ensure values are in the range [0, 255]
+    array8 = array8.astype(np.uint8)
     return array8
