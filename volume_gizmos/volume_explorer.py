@@ -271,3 +271,161 @@ class Explorer:
             index = self.indexers[dim].index
             location.append(index)
         return tuple(location)
+
+class LayersExplorer:
+
+    """
+    Explorer optimized for viewing layers of a large volume.
+    """
+
+    label = "Layers Explorer"
+
+    def __init__(self, volume, screen_width, voxel_width):
+        self.volume = volume
+        # pixel width for overview and detail
+        self.screen_width = screen_width
+        # size of detail
+        self.voxel_width = voxel_width
+        (I, J, K) = volume.shape
+        self.minJKlimit = np.array([0,0], dtype=int)
+        self.maxJKlimit = np.array([J - voxel_width, K - voxel_width], dtype=int)
+        self.nlayers = I
+        self.height = J
+        self.width = K
+        self.stride = max(1, self.height // self.screen_width)
+        self.screen_height = self.width // self.stride
+        self.current_layer = self.nlayers // 2
+        self.cached_image = None
+        self.minJK = np.array([J//2,K//2], dtype=int)
+        self.get_slice(layer=self.current_layer)
+        self.dash = self.dashboard()
+
+    def setMinJK(self, minJK):
+        minJK = np.array(minJK, dtype=int)
+        minJK = np.maximum(self.minJKlimit, minJK)
+        minJK = np.minimum(self.maxJKlimit, minJK)
+        self.minJK = minJK
+
+    def get_slice(self, layer=None, minJK=None):
+        # copy in case we are accessing a memmapped array
+        print("get_slice", layer, minJK, "current_layer", self.current_layer)
+        if layer is None:
+            layer = self.current_layer
+        if layer != self.current_layer or self.cached_image is None:
+            print("loading layer", layer)
+            img = self.cached_image = self.volume[layer].copy()
+            self.current_layer = layer
+            self.minval = img.min()
+            self.maxval = max(img.max(), self.minval+1)
+        if minJK is not None:
+            self.minJK = np.array(minJK, dtype=int)
+        img = self.cached_image
+        print("get_slice using minJK", self.minJK, "stride", self.stride)
+        minJK = self.minJK
+        maxJK = minJK + self.voxel_width
+        [mJ, jK] = minJK
+        [MJ, MK] = maxJK
+        stride = self.stride
+        self.layer_detail = self.asbytes(img[mJ:MJ, jK:MK])
+        layer_overview = self.asbytes(img[::stride, ::stride])
+        # add a red border around layer_overview detail area
+        color_overview = np.stack([layer_overview]*3, axis=-1)
+        sminJK = minJK // stride
+        smaxJK = maxJK // stride
+        [smJ, smK] = sminJK
+        [sMJ, sMK] = smaxJK
+        red = np.array([255, 0, 0], dtype=np.uint8)
+        color_overview[ smJ:sMJ, smK] = red
+        color_overview[ smJ:sMJ, sMK-1] = red
+        color_overview[ smJ, smK:sMK] = red
+        color_overview[ sMJ-1, smK:sMK] = red
+        self.layer_overview = color_overview
+        return self.layer_overview, self.layer_detail
+
+    def asbytes(self, array):
+        array = array.astype(np.float32)
+        normalized = (array - self.minval) / (self.maxval - self.minval)
+        norm256 = normalized * 255
+        return np.clip(norm256, 0, 255).astype(np.uint8)
+    
+    def location_info(self):
+        return f"Layer: {self.current_layer}  JK min: {self.minJK.tolist()}"
+
+    def dashboard(self):
+        overview = self.layer_overview
+        detail = self.layer_detail
+        self.overview_image = h5.Image(array=overview, height=self.screen_height, width=self.screen_width)
+        self.overview_image.css({"image-rendering": "pixelated"})
+        self.overview_image.on_pixel(self.overview_click)
+        self.detail_image = h5.Image(array=detail, height=self.screen_width, width=self.screen_width)
+        self.detail_image.css({"image-rendering": "pixelated"})
+        self.detail_image.on_pixel(self.detail_click)
+        label_text = h5.Text(self.label)
+        self.location_text = h5.Text(self.location_info())
+        self.label_slider = h5.Slider(
+            minimum=0,
+            maximum=self.nlayers - 1,
+            step=1,
+            value=self.current_layer,
+            on_change=self.layer_change,
+        )
+        self.label_slider.resize(width=self.screen_width)
+        dash = h5.Stack([
+            [
+                label_text,
+                self.location_text,
+            ],
+            [
+                self.label_slider,
+            ],
+            [
+                self.overview_image,
+                self.detail_image,
+            ],
+            "click on the image to change the focus area",
+            "adjust the layer with the slider above",
+        ])
+        return dash
+    
+    def redraw(self, layer=None, minJK=None):
+        try:
+            if minJK is not None:
+                self.minJK = minJK
+            print("redraw", layer, minJK)
+            overview, detail = self.get_slice(layer=layer, minJK=self.minJK)
+            print("redraw got slices")
+            self.overview_image.change_array(overview)
+            print("redraw changed overview")
+            self.detail_image.change_array(detail)
+            print("redraw changed detail")
+            self.location_text.text(self.location_info())
+            print("redraw updated location text")
+        except Exception as e:
+            print("redraw exception:", e)
+            self.location_text.text("Error: " + str(e))
+            raise e
+
+    def layer_change(self, event):
+        print("layer change event")
+        layer = self.label_slider.value
+        print("layer change", layer)
+        #self.current_layer = layer
+        self.redraw(layer=layer)
+
+    def detail_click(self, event, update=True):
+        column = event["pixel_column"]
+        row = event["pixel_row"]
+        print("detail click", row, column)
+        offset = np.array([row, column], dtype=int)
+        minJK = self.minJK + offset
+        self.setMinJK(minJK)
+        if update:
+            self.redraw()
+
+    def overview_click(self, event, update=True):
+        column = event["pixel_column"]
+        row = event["pixel_row"]
+        print("overview click", row, column)
+        self.setMinJK([row * self.stride, column * self.stride])
+        if update:
+            self.redraw()
