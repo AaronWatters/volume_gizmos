@@ -11,6 +11,8 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.orbiting = rotate
         self.labels = labels.astype(np.ubyte)
         self.intensities = loaders.scale_to_bytes(intensities)
+        self.cpu_seg = None
+        self.cpu_int = None
         if nlabels is None:
             nlabels = self.labels.max()
         hex_colors = [0] + list(color_list.get_hex_colors(nlabels))
@@ -23,10 +25,12 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         self.dJ = dJ
         self.dK = dK
 
-    async def change_volumes(self, labels, intensities):
-        self.labels = labels.astype(np.ubyte)
-        self.intensities = loaders.scale_to_bytes(intensities)
-        await self.load_volumes(reload=True)
+    async def change_volumes(self, labels=None, intensities=None):
+        if labels is not None:
+            self.labels = labels.astype(np.ubyte)
+        if intensities is not None:
+            self.intensities = loaders.scale_to_bytes(intensities)
+        await self.load_volumes(reload=True, labels=labels, intensities=intensities)
 
     def make_dashboard(self):
         size = self.size
@@ -54,7 +58,7 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         return self.dash
     
     async def connect_volumes(self):
-        return await self.async_connect_dashboard(self.dash, self.load_volumes)
+        return await self.async_connect_dashboard(self.dash, self.load_current_volumes)
     
     async def link(self):
         await self.dash.link()
@@ -64,18 +68,25 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
         await self.dash.show()
         await self.connect_volumes()
 
-    async def load_volumes(self, reload=False):
+    async def load_current_volumes(self, reload=False):
+        return await self.load_volumes(reload=reload, labels=self.labels, intensities=self.intensities)
+
+    async def load_volumes(self, reload=False, labels=None, intensities=None):
         web_gpu_volume = self.web_gpu_volume
         context = self.context
         dash = self.dash
-        cpu_seg = await self.async_load_array_to_js(self.labels, dash, name="cpu_seg")
-        cpu_int = await self.async_load_array_to_js(self.intensities, dash, name="cpu_int")
+        if labels is not None:
+            self.labels = labels
+            self.cpu_seg = await self.async_load_array_to_js(self.labels, dash, name="cpu_seg")
+        if intensities is not None:
+            self.intensities = intensities
+            self.cpu_int = await self.async_load_array_to_js(self.intensities, dash, name="cpu_int")
         #cpu_colors = self.load_array_to_js(self.colors, dash, name="cpu_colors")
         #gpu_colors = dash.cache("gpu_colors", cpu_colors.gpu_volume(context, dK, dJ, dI))
         if not reload:
             [dK, dJ, dI] = [self.dK, self.dJ, self.dI]
-            gpu_seg = dash.cache("gpu_seg", cpu_seg.gpu_volume(context, dK, dJ, dI))
-            gpu_int = dash.cache("gpu_int", cpu_int.gpu_volume(context, dK, dJ, dI))
+            gpu_seg = dash.cache("gpu_seg", self.cpu_seg.gpu_volume(context, dK, dJ, dI))
+            gpu_int = dash.cache("gpu_int", self.cpu_int.gpu_volume(context, dK, dJ, dI))
             view_init = dash.new(
                 web_gpu_volume.SegmentationQuad.SegmentationQuad, 
                 gpu_seg, 
@@ -94,7 +105,8 @@ class SegmentationQuad(VolumeSuper.VolumeGizmo):
                 orbiting
             ))
         else:
-            do(self.quad.change_volumes(cpu_seg, cpu_int))
+            assert self.cpu_seg is not None and self.cpu_int is not None, "must have loaded volumes before reloading"
+            do(self.quad.change_volumes(self.cpu_seg, self.cpu_int))
         self.depth_text.text("loaded async.")
 
     def depth_slide(self, *ignored):
