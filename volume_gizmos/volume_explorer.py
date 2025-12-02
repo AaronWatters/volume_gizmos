@@ -292,8 +292,8 @@ class LayersExplorer:
         self.nlayers = I
         self.height = J
         self.width = K
-        self.stride = max(1, self.height // self.screen_width)
-        self.screen_height = self.width // self.stride
+        self.stride = max(1, self.width // self.screen_width)
+        self.screen_height = self.height // self.stride
         self.current_layer = self.nlayers // 2
         self.cached_image = None
         self.minJK = np.array([J//2,K//2], dtype=int)
@@ -394,9 +394,9 @@ class LayersExplorer:
             print("redraw", layer, minJK)
             overview, detail = self.get_slice(layer=layer, minJK=self.minJK)
             print("redraw got slices")
-            self.overview_image.change_array(overview)
+            self.overview_image.change_array(overview, url=False)
             print("redraw changed overview")
-            self.detail_image.change_array(detail)
+            self.detail_image.change_array(detail, url=False)
             print("redraw changed detail")
             self.location_text.text(self.location_info())
             print("redraw updated location text")
