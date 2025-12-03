@@ -87,6 +87,20 @@ Open gizmo using link (control-click / open link)
  GIZMO_LINK: http://127.0.0.1:50820/gizmo/http/MGR_1715262075857_2/index.html 
 ```
 
+# Note on WebGPU security restrictions
+
+Some of the components of this package use WebGPU in the browser
+interface.  As noted here
+
+<a href="https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API">
+https://developer.mozilla.org/en-US/docs/Web/API/WebGPU_API
+</a>
+
+WebGPU is only available in "secure contexts".  This means that these
+components will work if the Python "parent" and the browser "child"
+both run on the same computer, but they probably will not work when the
+Python parent runs on a different computer from the browser "child" because
+the parent and child communicate using HTTP which is insecure.
 
 ## Update javascript dependencies
 
